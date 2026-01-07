@@ -67,12 +67,9 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const products = @json($products->map(fn($p) => [
-        'id' => $p->id,
-        'name' => $p->name,
-        'stock' => $p->stock,
-        'price' => $p->price,
-    ]));
+    // Simpler array so it works on all PHP versions
+    // Render JSON langsung supaya aman dari sintaks Blade
+    const products = {!! $products->values()->toJson(JSON_UNESCAPED_UNICODE) !!};
 
     const tbody = document.querySelector('#items-table tbody');
     const addRowBtn = document.getElementById('add-row');
@@ -103,18 +100,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const index = tbody.querySelectorAll('.item-row').length;
         const tr = document.createElement('tr');
         tr.classList.add('item-row');
-        tr.innerHTML = `
-            <td>
-                <select name="items[${index}][product_id]" class="form-select product-select" required>
-                    <option value="">-- Pilih Produk --</option>
-                    ${products.map(p => `<option value="${p.id}" data-stock="${p.stock}" data-price="${p.price}">${p.name} (Rp ${p.price.toLocaleString('id-ID')})</option>`).join('')}
-                </select>
-            </td>
-            <td><span class="stock-label text-muted">-</span></td>
-            <td><input type="number" name="items[${index}][qty]" class="form-control qty-input" min="1" value="1" required></td>
-            <td><span class="price-label text-muted">-</span></td>
-            <td><button type="button" class="btn btn-outline-danger btn-sm remove-row">Hapus</button></td>
-        `;
+        tr.innerHTML = [
+            '<td>',
+            `  <select name="items[${index}][product_id]" class="form-select product-select" required>`,
+            '    <option value="">-- Pilih Produk --</option>',
+            ...products.map((p) =>
+                `<option value="${p.id}" data-stock="${p.stock}" data-price="${p.price}">${p.name} (Rp ${Number(p.price).toLocaleString('id-ID')})</option>`
+            ),
+            '  </select>',
+            '</td>',
+            '<td><span class="stock-label text-muted">-</span></td>',
+            `<td><input type="number" name="items[${index}][qty]" class="form-control qty-input" min="1" value="1" required></td>`,
+            '<td><span class="price-label text-muted">-</span></td>',
+            '<td><button type="button" class="btn btn-outline-danger btn-sm remove-row">Hapus</button></td>',
+        ].join('');
         tbody.appendChild(tr);
     });
 
